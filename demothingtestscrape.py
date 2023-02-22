@@ -13,14 +13,13 @@ import pandas as pd
 import unicodedata, unidecode
 
 """
-On the lowest level, we want to scrape the brand info page for each brand 
-Before that, we want to grab each brand 
-In order to grab each brand, we need to 
-
 Things to do: 
-    Extraction of relevant data from info
-    Accessing
-    Make a function that takes in a string and returns the string all lowercase with - in all whitespace
+    1) Make a function that takes in a string and returns the string all lowercase with - in all whitespace
+    2) Extraction of relevant data from scrape (from brand scrape + scrape by category) —both are working to an extent
+        Scrape by Category seems to have an issue with link redirection versus links when clicking around
+        Scrape by Brand needs a method for extracting all the info we want from the text chunk that was scraped
+    3) Extraction of relevant data from scrape results
+        This is cleaning up everything for final entry into a pandas dataframe which can be converted to a csv
 """
 
 def scrape_brand_info_test():
@@ -44,11 +43,13 @@ def scrape_brand_info_test():
         """
         info = soup.find('script', {'id': '__NEXT_DATA__'})
         #print(info)
+        #Text stripping doesnt help nearly as much here. 
         print(info.text.strip())
         
 
 def scrape_brand_info(brand):
     #Will need to parse brand name either before or after. It should be all lowercase with -s between words
+    #can use a call to text-converter to get a url-style brand name
     r = get(f'https://thingtesting.com/brand/{brand}/info')
     if r.status_code == 200:
         print("Accessed brand page")
@@ -64,33 +65,50 @@ def scrape_brand_info(brand):
 
 
 
+#maybe like above it may be useful to play around with getting scrape by categories to work in a test case
 def scrape_thingtesting_by_category(categories):
     #Could run a while 404 vs while 200 in order to guarantee success
     #Here we want to grab brand names and pass on the brand names to scrape_brand_info 
     for category in categories: 
-        r = get(f"https://thingtesting.com/categories/{category}")
+        #If the category does not exist it will redirect to the homepage
+        print("Curr category: " + category)
+        r = get(f"https://thingtesting.com/categories/{category}?f=current-user-unreviewed-brands")
         if r.status_code == 200:
-            print ("accessed site")
+            print ("Accessed categories page")
             soup = BeautifulSoup(r.content, 'html.parser')
-            #brands = soup.find_all()
+            #print(soup.prettify())
+        
+            brands = soup.find_all('a', {'class': 'sc-cd075a2b-5 fNlBic'})
+            for i in range(0, len(brands)):
+                print(brands[i].text.strip())
         else:
-            print ("did not access site")
+            print ("Did not access site")
 
 """
 Categories pages obfuscates the list of categories. May not be as useful timewise to figure out.
+Instead of using the /categories page I am instead going to scrape the lead categories from the homepage.
+This will lead to less specific results than what is possible, but should still cover all the companies
+as the homepage categories are just a more general list. 
 """
 
 def scrape_category_names():
-    url = 'https://thingtesting.com/categories'
+    category_holder = []
+    url = 'https://thingtesting.com'
+    #url = 'https://thingtesting.com/categories'
     response = requests.get(url)
     if response.status_code == 200:
         soup = BeautifulSoup(response.content, 'html.parser')
-        print(soup)
+        print("Accessed homepage. Attemtping to grab categories.")
+
+        #This is successfully outputing 
+        categories = soup.find_all('button', {'class': 'sc-de770ae-0 efXhIH sc-70c1ce0d-0 iqVlCd'})
+        #This outputs the correct category names. From this, we need to just store a list of all the names.
+        for i in range(0, len(categories)):
+            #print(categories[i].text.strip())
+            category_holder.append(categories[i].text.strip())
         
-        #The main problem is the information I want is hidden. This should be grabbing the relevant info.
-        correct_category = soup.find_all('a', {'class': 'sc-14fdfd51-0 eDFusO'})
-        print(correct_category)
-        return correct_category
+        
+        return category_holder
 
 """
 Here I am envisioning no trailing whitespace characters. I just want to take in strings that 
@@ -98,15 +116,25 @@ represent brands / categories and to return the url-style format. This should be
 no trailing whitespace wherein all whitespace within the string is converted to dashes and the entire
 string is lowercase. 
 """
-def text_converter(string):
+def text_converter_brand(string):
     new_string = string.lower()
     new_string.replace(" ", "-")
     return string
 
-scrape_brand_info_test()       
-#categories = scrape_category_names()
-#scrape_thingtesting_by_category(categories)
 
+print(" ")
+print(" ")
+print(" ")      
+categories = scrape_category_names()
+print(" ")
+print(" ")
+print(" ")
+print(categories)
+#The method below really ought to return brand names as the method above returned categories
+scrape_thingtesting_by_category(categories)
 
+#The generalized version of the method below ought to return a pandas dataframe with possible entry values for all the relevant text we could get from a brands info page
+#scrape_brand_info_test() 
 
+#Finally, we can concatenate the data here by amalgamating the returned dataframes. 
 
