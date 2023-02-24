@@ -25,20 +25,21 @@ Things to do:
         pass that set into a function that will iterate over it and store the relevant data in a pandas dataframe
     4) Check on edge cases. There are a few companies with abnormal names (arc'teryx, dr. jort+, etc.) that may require changes
         to how brand names are processed after scraping before accessing the speciifc brand page for scraping
+    5) Deal with Founded category using 2 regexs 
 """
  #Could run while 404 vs while 200 in order to guarantee success
 
 def scrape_brand_info_test():
     #r = get('https://thingtesting.com/brands/flair-chocolatier/info')
-    r = get('https://thingtesting.com/brands/motif/info')
+    r = get('https://thingtesting.com/brands/casper/info')
     #Have tested on multiple different sources. As long as the brand name is correctly divided up, the general form should work
     if r.status_code == 200:
         print ("Accessed Test Page")
         soup = BeautifulSoup(r.content, 'html.parser')
         
-        brand_description = soup.find('div', {'class': 'sc-53654036-0 sc-733f3dab-1 bJugGc jdqFcO'})
+        #brand_description = soup.find('div', {'class': 'sc-53654036-0 sc-733f3dab-1 bJugGc jdqFcO'})
         #print(brand_description)
-        print("Brand description: " + brand_description.text.strip())
+        #print("Brand description: " + brand_description.text.strip())
         #The text stripped version is exactly what we want to save. 
         
         """
@@ -48,7 +49,7 @@ def scrape_brand_info_test():
         format "keyword": ______ where the underline implies the information we are seeking. 
         """
         info = soup.find('script', {'id': '__NEXT_DATA__'})
-        print(info)
+        #print(info)
         print(" ")
         print(" ")
         print(" ")
@@ -213,56 +214,95 @@ for brand in brands:
     brand_info_seperated = seperate_words(brands_as_list)
     #for val in brand_info:
     #    print(val)
-    categories = " "
-    shipping_locations = " "
-    launch_date = " "
-    headquarters_loc = " "
-    founders = " "
-    founder_attrs = " "
-    certs = " "
+    categories, founded, shipping_locations, launch_date, headquarters_loc, founders, founder_attrs, certs = ("", "", "", "", "", "", "", "")
     for val in brand_info_seperated:
         #first_word = first_word_regex.search(val)
         all_words = val.split(" ")
         #Now we can begin assigning based on the first word.
-        if(all_words[0] == "Category" or "Categories"):
-            #print("This is a category section " + all_words[0])
-            #print("This is what should be stored " + list_to_string(all_words[1:]))
+        print("Curr word being examined " + all_words[0])
+        print("Full line " + val)
+        if(all_words[0] == "Category"):
+            print("This is a category section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
             categories = list_to_string(all_words[1:])
+        elif(all_words[0] == "Categories"):
+            print("This is a category section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
+            categories = list_to_string(all_words[1:])
+            
+        elif(all_words[0][0:7] == "Founded"):
+            print("This is a founded section " + all_words[0][0:7])
+            #Now we have to check if a month was added or just a year. This can be done by checking all_words size. 
+            if(len(all_words[0]) > 7):
+                print("This is what should be stored " + list_to_string(all_words[0][7:]))
+                founded = list_to_string(all_words[0][7:])
+            else:
+                print("This is what should be stored " + list_to_string(all_words[1:]))
+                founded = list_to_string(all_words[1:])
+            
         elif(all_words[0] == "Ships"):
             #Here we will have to deal with 
-            #print("This is a ships to section " + all_words[0])
-            #print("This is what should be stored " + list_to_string(all_words[1:]))
+            print("This is a ships to section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
             shipping_locations = list_to_string(all_words[1:])
+            
         elif(all_words[0] == "Launched"):
-            #print("This is a launched section " + all_words[0])
-            #print("This is what should be stored " + list_to_string(all_words[1:]))
+            print("This is a launched section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
             launch_date = list_to_string(all_words[1:])
-        elif(all_words[0] == "Headquarters "):
-            #print("This is a headquarters section " + all_words[0])
-            #print("This is what should be stored " + list_to_string(all_words[1:]))
+            
+        elif(all_words[0] == "Headquarters"):
+            print("This is a headquarters section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
             headquarters_loc = list_to_string(all_words[1:])
+            
         elif(all_words[0] == "Founder"):
             #Here we must catch if it is a founder or founder attributes section
-            #print("This is a founders section " + all_words[0])
+            print("This is a founders section " + all_words[0])
             if(all_words[1] == "attributes"):
-                #print("This is what should be stored " + list_to_string(all_words[2:]))
+                print("This is what should be stored " + list_to_string(all_words[2:]))
                 founder_attrs = list_to_string(all_words[2:])
             else: 
-                #print("This is what should be stored " + list_to_string(all_words[1:]))
+                print("This is what should be stored " + list_to_string(all_words[1:]))
                 founders = list_to_string(all_words[1:])
+        
+        elif(all_words[0] == "Founders"):
+            #Here we must catch if it is a founder or founder attributes section
+            print("This is a founders section " + all_words[0])
+            if(all_words[1] == "attributes"):
+                print("This is what should be stored " + list_to_string(all_words[2:]))
+                founder_attrs = list_to_string(all_words[2:])
+            else: 
+                print("This is what should be stored " + list_to_string(all_words[1:]))
+                founders = list_to_string(all_words[1:])
+                
         elif(all_words[0] == "Certifications"):
-            #print("This is a certification section " + all_words[0])
-            #print("This is what should be stored " + list_to_string(all_words[1:]))
+            print("This is a certification section " + all_words[0])
+            print("This is what should be stored " + list_to_string(all_words[1:]))
             certs = list_to_string(all_words[1:])
         #print(all_words[0])
         #print(val)
-    #When the vals are empty this really screws up...have to figure out a workaround for entering blank values. Probably a "Not Found" type deal. 
+    #When the vals are empty this really screws up...have to figure out a workaround for entering blank values. Probably a "Not Found" type deal.
+    if not categories: categories = "Not Found"
+    if not shipping_locations: shipping_locations = "Not Found"
+    if not launch_date: launch_date = "Not Found"
+    if not headquarters_loc: headquarters_loc = "Not Found"
+    if not founders: founders = "Not Found"
+    if not founder_attrs: founder_attrs = "Not Found"
+    if not certs: certs = "Not Found"
+    print("Category " + categories)
+    print("Shipping Locations " + shipping_locations)
+    print("launch_date" + launch_date)
+    print("Headquarters Location " + headquarters_loc)
+    print("Founders " + founders)
+    print("founder Attributes " + founder_attrs)
+    print("Certifications " + certs)
     final_row = [curr_brand, categories, shipping_locations, launch_date, headquarters_loc, founders, founder_attrs, certs]
-    print(final_row)
+    #print(final_row)
     df.loc[len(df)] = final_row
     #Here is where we can parse the brand_info tab
     
 #Finally, we can concatenate the data here by amalgamating the returned dataframes. 
 
 #scrape_thingtesting_by_category_test()
-#scrape_brand_info_test()
+scrape_brand_info_test()
