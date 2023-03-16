@@ -40,12 +40,23 @@ def scrape_brand_info_test():
         for i in range (0, len(categories_for_classifying)):
             print(categories_for_classifying[i].text.strip())
 
+def scrape_brand_website(brand):
+    return_string = ""
+    r = get(f'https://thingtesting.com/brands/{brand}/info')
+    if r.status_code == 200:
+        soup = BeautifulSoup(r.content, 'html.parser')
+        brand_website = soup.find('span', {'class': 'sc-53654036-0 sc-6c4d380-2 fpWmzr kNnRaV'})
+        if not brand_website: return_string = "There is no brand website"
+        else: return_string = brand_website.text.strip()
+    return return_string
+    
+
 def scrape_brand_description(brand):
     return_string = ""
     r = get(f'https://thingtesting.com/brands/{brand}/info')
     if r.status_code == 200:
         soup = BeautifulSoup(r.content, 'html.parser')
-        brand_description = soup.find('div', {'class': 'sc-53654036-0 sc-733f3dab-1 bJugGc jdqFcO'})
+        brand_description = soup.find('div', {'class': 'sc-88b936a-0 dIJIJC'})
         if not brand_description:
             return_string = "There is no brand description"
         else:
@@ -76,7 +87,8 @@ def scrape_thingtesting_by_category(categories):
         r = get(f"https://thingtesting.com/categories/{curr_category}?o=added")
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
-            brands = soup.find_all('a', {'class': 'sc-cd075a2b-5 fNlBic'})
+            #brands = soup.find_all('a', {'class': 'sc-cd075a2b-5 fNlBic'})
+            brands = soup.find_all('h2', {'class': 'sc-53654036-0 jatDqv'})
             for i in range(0, len(brands)):
                 brand_holder.add(brands[i].text.strip())
         else:
@@ -92,12 +104,13 @@ as the homepage categories are just a more general list.
 #This is successfully outputing
 def scrape_category_names():
     category_holder = []
-    url = 'https://thingtesting.com'
-    response = requests.get(url)
-    if response.status_code == 200:
-        soup = BeautifulSoup(response.content, 'html.parser')
-        categories = soup.find_all('button', {'class': 'sc-de770ae-0 efXhIH sc-70c1ce0d-0 iqVlCd'})
+    r = get('https://thingtesting.com/brands')
+    
+    if r.status_code == 200:
+        soup = BeautifulSoup(r.content, 'html.parser')
+        categories = soup.find_all('button', {'class': 'sc-de770ae-0 efXhIH sc-1e3b3302-0 eaPxmd'})
         for i in range(0, len(categories)):
+            print(categories[i].text.strip())
             category_holder.append(categories[i].text.strip())
         return category_holder
 
@@ -133,12 +146,13 @@ def list_to_string(list):
     return return_val
 
 def scrape_thing_testing():
-    df = pd.DataFrame(columns = ["Brand Name", "Brand Url", "Brand Description", "Categories", "Founded", "Ships to", "Launched", "Headquarters", "Founders", "Founder Attributes", "Certifications"]) 
+    df = pd.DataFrame(columns = ["Brand Name", "Brand Url", "Brand Description", "Categories", "Founded", "Ships to", "Launched", "Headquarters", "Founders", "Founder Attributes", "Certifications", "Brand Website"]) 
     for brand in brands:
         #to_be_added = []
         curr_brand = text_converter_brand(brand)
         brand_info = scrape_brand_info(curr_brand)
         brand_description = scrape_brand_description(curr_brand)
+        brand_website = scrape_brand_website(curr_brand)
         brands_as_list = list(brand_info)
         brand_info_seperated = seperate_words(brands_as_list)
         brand_url = "https://thingtesting.com/brands/" + curr_brand + "/info"
@@ -168,6 +182,7 @@ def scrape_thing_testing():
                 else: 
                     founders = list_to_string(all_words[1:])     
             elif(all_words[0] == "Certifications"): certs = list_to_string(all_words[1:])
+        
         #When the vals are empty this really screws up...have to figure out a workaround for entering blank values. Probably a "Not Found" type deal.
         if not categories: categories = "Not Found"
         if not founded: founded = "Not Found"
@@ -178,7 +193,7 @@ def scrape_thing_testing():
         if not founder_attrs: founder_attrs = "Not Found"
         if not certs: certs = "Not Found"
       
-        final_row = [curr_brand, brand_url, brand_description, categories, founded, shipping_locations, launch_date, headquarters_loc, founders, founder_attrs, certs]
+        final_row = [curr_brand, brand_url, brand_description, categories, founded, shipping_locations, launch_date, headquarters_loc, founders, founder_attrs, certs, brand_website]
         df.loc[len(df)] = final_row
     return df
 
@@ -186,5 +201,4 @@ categories = scrape_category_names()
 brands = scrape_thingtesting_by_category(categories)
 df = scrape_thing_testing()
 
-#scrape_brand_info_test()
 
