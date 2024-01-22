@@ -130,7 +130,7 @@ def scrape_homepage_venturelab():
     #First_Num should actually be page to start on. Second 
     first_num = 1
     second_num = 1
-    for i in range(1,2):
+    for i in range(1,37):
         r = get(f'https://www.venturelab.swiss/index.cfm?cfid=99481193&cftoken=495ae4e2be858b0a-C0196F1C-0665-64DE-F31E4CCE4EEAAA42&bericht_id=9735&start_liste_9735={first_num}&bericht_seite_9735={second_num}&page=137241#fgBerichtAnker_9735')
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, 'html.parser')
